@@ -1,58 +1,73 @@
 import 'package:flutter/material.dart';
+import 'package:lino_parents/src/Controller/all_controllers.dart';
 import 'package:lino_parents/src/View/widgets/app_snackbar.dart';
 import 'package:lino_parents/src/View/widgets/app_submit_button.dart';
+import 'package:state_extended/state_extended.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  StateX<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
-  late TextEditingController _emailController;
+class _LoginScreenState extends StateX<LoginScreen> {
+  late AllController _con;
+  late TextEditingController _mobileController;
   late TextEditingController _passwordController;
 
-  late FocusNode _emailFocus;
+  late FocusNode _mobileFocus;
   late FocusNode _passwordFocus;
 
   @override
   void initState() {
     super.initState();
-    _emailController = TextEditingController();
+    _con = AllController();
+    _mobileController = TextEditingController();
     _passwordController = TextEditingController();
-    _emailFocus = FocusNode();
+    _mobileFocus = FocusNode();
     _passwordFocus = FocusNode();
   }
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _mobileController.dispose();
     _passwordController.dispose();
-    _emailFocus.dispose();
+    _mobileFocus.dispose();
     _passwordFocus.dispose();
     super.dispose();
   }
 
   bool validate() {
-    if (_emailController.text.isEmpty) {
+    if (_mobileController.text.contains(" ")) {
       AppSnackBar.show(
         context,
-        message: "Email required",
+        message: "Mobile number should not contain spaces",
         backgroundColor: Colors.red,
       );
       return false;
     }
-
-    if (!RegExp(
-      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
-    ).hasMatch(_emailController.text)) {
+    if (_mobileController.text.length != 10) {
       AppSnackBar.show(
         context,
-        message: "Enter valid email",
+        message: "Mobile number should be 10 digits",
         backgroundColor: Colors.red,
       );
       return false;
+    } else {
+      if (_mobileController.text.startsWith('0') ||
+          _mobileController.text.startsWith('1') ||
+          _mobileController.text.startsWith('2') ||
+          _mobileController.text.startsWith('3') ||
+          _mobileController.text.startsWith('4') ||
+          _mobileController.text.startsWith('5')) {
+        AppSnackBar.show(
+          context,
+          message: "Please enter valid mobile number",
+          backgroundColor: Colors.red,
+        );
+        return false;
+      }
     }
 
     if (_passwordController.text.isEmpty) {
@@ -74,14 +89,38 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       return false;
     }
-
     return true;
   }
 
-  void loginFun() {
+  void loginFun() async {
     if (validate()) {
-      debugPrint("Login Success");
-      Navigator.pushNamed(context, '/setting');
+      try {
+        final res = await _con.login(
+          mobile: '+91 ${_mobileController.text}',
+          password: _passwordController.text,
+        );
+
+        if (res.success) {
+          AppSnackBar.show(
+            context,
+            message: res.msg,
+            backgroundColor: Colors.green,
+          );
+          Navigator.pushNamed(context, '/setting');
+        } else {
+          AppSnackBar.show(
+            context,
+            message: res.msg,
+            backgroundColor: Colors.red,
+          );
+        }
+      } catch (e) {
+        AppSnackBar.show(
+          context,
+          message: "Server error",
+          backgroundColor: Colors.red,
+        );
+      }
     }
   }
 
@@ -128,7 +167,7 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 _logo(size),
                 SizedBox(height: size.height * 0.02),
-                _emailField(size),
+                _mobileField(size),
                 SizedBox(height: size.height * 0.028),
                 _passwordField(size),
                 SizedBox(height: size.height * 0.04),
@@ -153,12 +192,12 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _emailField(Size size) {
+  Widget _mobileField(Size size) {
     return TextField(
-      controller: _emailController,
-      focusNode: _emailFocus,
-      keyboardType: TextInputType.emailAddress,
-      decoration: _inputDecoration(size, hint: "Email Id"),
+      controller: _mobileController,
+      focusNode: _mobileFocus,
+      keyboardType: TextInputType.phone,
+      decoration: _inputDecoration(size, hint: "Mobile"),
       onSubmitted: (_) => FocusScope.of(context).requestFocus(_passwordFocus),
     );
   }
