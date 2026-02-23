@@ -1,33 +1,122 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:lino_parents/src/Controller/all_controllers.dart';
+import 'package:lino_parents/src/Model/repository.dart';
 import 'package:lino_parents/src/View/widgets/app_snackbar.dart';
 import 'package:lino_parents/src/View/widgets/app_submit_button.dart';
+import 'package:socket_io_client/socket_io_client.dart';
+import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'package:geolocator/geolocator.dart';
+import 'package:state_extended/state_extended.dart';
 
 class SettingScreen extends StatefulWidget {
   const SettingScreen({super.key});
 
   @override
-  State<SettingScreen> createState() => _SettingScreenState();
+  StateX<SettingScreen> createState() => _SettingScreenState();
 }
 
-class _SettingScreenState extends State<SettingScreen> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-
+class _SettingScreenState extends StateX<SettingScreen> {
+  late AllController _con;
   late TextEditingController hourController, minuteController;
   late FocusNode hourFocusNode, minuteFocusNode;
   late bool learnLock, playLock;
-
-  final String parentName = "Parent's Name";
-  final String childName = "Child's Name";
+  LocationPermission? permission;
+  final String parentName = localDb.value.parentName!;
+  final String childName = localDb.value.childName!;
+  late IO.Socket socket;
 
   @override
   void initState() {
     super.initState();
+    _con = AllController();
     hourController = TextEditingController(text: "01");
     minuteController = TextEditingController(text: "00");
     hourFocusNode = FocusNode();
     minuteFocusNode = FocusNode();
     learnLock = false;
     playLock = false;
+    getData();
+  }
+
+  void getData() async {
+    Position pos = await getCurrentLocation();
+    socket = IO.io(
+      baseUrl,
+      IO.OptionBuilder()
+          .setTransports(['websocket'])
+          .disableAutoConnect()
+          .build(),
+    );
+
+    socket.onConnect((_) {
+      dynamic data = {
+        "userId": localDb.value.uid,
+        "userType": "parent",
+        "latitude": pos.latitude.toString(),
+        "longitude": pos.longitude.toString(),
+      };
+      socket.emit('login', data);
+    });
+
+    socket.onConnectError((data) {
+      print("Connect Error: $data");
+    });
+
+    socket.onDisconnect((_) {
+      print("Disconnected");
+    });
+    socket.connect();
+  }
+
+  Future<Position> getCurrentLocation() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    // 1. Location service on hai ya nahi
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      throw Exception('Location services are disabled.');
+    }
+
+    // 2. Permission check
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        throw Exception('Location permission denied');
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      throw Exception('Location permission permanently denied');
+    }
+
+    // 3. Get position
+    return await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+    );
+  }
+
+  Future<void> updateTimeDuration() async {
+    final int hour = int.tryParse(hourController.text) ?? 0;
+    final int minute = int.tryParse(minuteController.text) ?? 0;
+    bool success = await _con.saveTimeDurationContro(hour, minute);
+    if (success) {
+      AppSnackBar.show(
+        context,
+        message: "Settings saved successfully",
+        backgroundColor: const Color(0xff7C3AED),
+      );
+    } else {
+      AppSnackBar.show(
+        context,
+        message: "Something went wrong",
+        backgroundColor: Colors.red,
+      );
+    }
+    hourController.clear();
+    minuteController.clear();
   }
 
   @override
@@ -36,28 +125,41 @@ class _SettingScreenState extends State<SettingScreen> {
     minuteController.dispose();
     hourFocusNode.dispose();
     minuteFocusNode.dispose();
+    socket.disconnect();
+    socket.clearListeners();
+    socket.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final Size size = MediaQuery.sizeOf(context);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Padding(
-          padding: EdgeInsets.only(left: size.width * 0.01),
-          child: SizedBox(
-            width: size.width * 0.2,
-            height: size.height * 0.12,
-            child: Image.asset('assets/images/logo.png'),
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (!didPop) {
+          socket.disconnect();
+          socket.clearListeners();
+          socket.dispose();
+          exit(0);
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Padding(
+            padding: EdgeInsets.only(left: size.width * 0.01),
+            child: SizedBox(
+              width: size.width * 0.2,
+              height: size.height * 0.12,
+              child: Image.asset('assets/images/logo.png'),
+            ),
           ),
+          automaticallyImplyLeading: false,
+          backgroundColor: Colors.white,
         ),
-        automaticallyImplyLeading: false,
         backgroundColor: Colors.white,
+        body: Stack(children: [_gradientSection(size), _contentSection(size)]),
       ),
-      backgroundColor: Colors.white,
-      body: Stack(children: [_gradientSection(size), _contentSection(size)]),
     );
   }
 
@@ -94,55 +196,44 @@ class _SettingScreenState extends State<SettingScreen> {
   }
 
   Widget _form(Size size) {
-    return Form(
-      key: _formKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _staticLabel(parentName, size),
-          SizedBox(height: size.height * 0.025),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _staticLabel(parentName, size),
+        SizedBox(height: size.height * 0.025),
 
-          _staticLabel(childName, size),
-          SizedBox(height: size.height * 0.035),
+        _staticLabel(childName, size),
+        SizedBox(height: size.height * 0.035),
 
-          _lockTile(
-            size: size,
-            title: "Lock Learn Section",
-            subtitle: "Enable/Disable learn section",
-            value: learnLock,
-            onTap: () => setState(() => learnLock = !learnLock),
-          ),
-          SizedBox(height: size.height * 0.035),
+        _lockTile(
+          size: size,
+          title: "Lock Learn Section",
+          subtitle: "Enable/Disable learn section",
+          value: learnLock,
+          onTap: () => setState(() => learnLock = !learnLock),
+        ),
+        SizedBox(height: size.height * 0.035),
 
-          _lockTile(
-            size: size,
-            title: "Lock Play Section",
-            subtitle: "Enable/Disable play section",
-            value: playLock,
-            onTap: () => setState(() => playLock = !playLock),
-          ),
-          SizedBox(height: size.height * 0.035),
+        _lockTile(
+          size: size,
+          title: "Lock Play Section",
+          subtitle: "Enable/Disable play section",
+          value: playLock,
+          onTap: () => setState(() => playLock = !playLock),
+        ),
+        SizedBox(height: size.height * 0.035),
 
-          _timeControlBox(size),
-          SizedBox(height: size.height * 0.035),
+        _timeControlBox(size),
+        SizedBox(height: size.height * 0.035),
 
-          AppPrimaryButton(
-            text: "Save Settings",
-            backgroundColor: Colors.white,
-            textColor: const Color(0xff7C3AED),
-            onPressed: () {
-              if (_formKey.currentState!.validate()) {
-                AppSnackBar.show(
-                  context,
-                  message: "Settings saved successfully",
-                  backgroundColor: const Color(0xff7C3AED),
-                );
-              }
-            },
-          ),
-          SizedBox(height: size.height * 0.02),
-        ],
-      ),
+        AppPrimaryButton(
+          text: "Save Settings",
+          backgroundColor: Colors.white,
+          textColor: const Color(0xff7C3AED),
+          onPressed: updateTimeDuration,
+        ),
+        SizedBox(height: size.height * 0.02),
+      ],
     );
   }
 

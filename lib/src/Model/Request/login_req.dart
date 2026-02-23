@@ -1,16 +1,18 @@
 class LoginRequest {
-  final String mobile;
-  final String password;
+  String? mobile;
+  String? password;
 
-  LoginRequest({
-    required this.mobile,
-    required this.password,
-  });
+  LoginRequest({this.mobile, this.password});
+
+  LoginRequest.fromJson(Map<String, dynamic> json) {
+    mobile = json['mobile'];
+    password = json['password'];
+  }
 
   Map<String, dynamic> toJson() {
-    return {
-      "mobile": mobile,
-      "password": password,
-    };
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['mobile'] = mobile;
+    data['password'] = password;
+    return data;
   }
 }

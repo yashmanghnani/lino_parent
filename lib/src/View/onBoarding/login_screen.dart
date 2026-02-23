@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lino_parents/src/Controller/all_controllers.dart';
+import 'package:lino_parents/src/Model/Request/login_req.dart';
+import 'package:lino_parents/src/Model/Response/login_res.dart';
 import 'package:lino_parents/src/View/widgets/app_snackbar.dart';
 import 'package:lino_parents/src/View/widgets/app_submit_button.dart';
 import 'package:state_extended/state_extended.dart';
@@ -25,6 +27,8 @@ class _LoginScreenState extends StateX<LoginScreen> {
     _con = AllController();
     _mobileController = TextEditingController();
     _passwordController = TextEditingController();
+    // _mobileController.text = "7906870310";
+    // _passwordController.text = "Yash@1234";
     _mobileFocus = FocusNode();
     _passwordFocus = FocusNode();
   }
@@ -95,22 +99,23 @@ class _LoginScreenState extends StateX<LoginScreen> {
   void loginFun() async {
     if (validate()) {
       try {
-        final res = await _con.login(
-          mobile: '+91 ${_mobileController.text}',
-          password: _passwordController.text,
+        LoginResponse res = await _con.loginContro(
+          LoginRequest()
+            ..mobile = _mobileController.text
+            ..password = _passwordController.text,
         );
 
-        if (res.success) {
+        if (res.success!) {
           AppSnackBar.show(
             context,
-            message: res.msg,
+            message: res.msg!,
             backgroundColor: Colors.green,
           );
           Navigator.pushNamed(context, '/setting');
         } else {
           AppSnackBar.show(
             context,
-            message: res.msg,
+            message: res.msg!,
             backgroundColor: Colors.red,
           );
         }
