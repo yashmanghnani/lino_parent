@@ -4,6 +4,18 @@ class Localdb {
   String? password;
   String? parentName;
   String? childName;
+  bool? playLock;
+  bool? learnLock;
+  int? timeDuration;
 
-  Localdb({this.uid, this.mobile, this.password, this.parentName, this.childName});
+  Localdb({
+    this.uid,
+    this.mobile,
+    this.password,
+    this.parentName,
+    this.childName,
+    this.playLock,
+    this.learnLock,
+    this.timeDuration
+  });
 }

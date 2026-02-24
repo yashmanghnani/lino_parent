@@ -1,3 +1,5 @@
+import 'dart:ffi';
+
 class LoginResponse {
   bool? success;
   String? msg;
@@ -30,6 +32,8 @@ class User {
   String? gender;
   String? month;
   String? year;
+  bool? learnLock;
+  bool? playLock;
   Otp? emailOtp;
   Otp? phoneOtp;
   String? createdAt;
@@ -49,6 +53,8 @@ class User {
     this.gender,
     this.month,
     this.year,
+    this.learnLock,
+    this.playLock,
     this.emailOtp,
     this.phoneOtp,
     this.createdAt,
@@ -70,6 +76,8 @@ class User {
       gender: json["gender"],
       month: json["month"],
       year: json["year"],
+      learnLock: json["learnLock"],
+      playLock: json["playLock"],
       emailOtp: json["emailOtp"] != null
           ? Otp.fromJson(json["emailOtp"])
           : null,
@@ -96,6 +104,8 @@ class User {
       "gender": gender,
       "month": month,
       "year": year,
+      "playLock": playLock,
+      "learnLock": learnLock,
       "emailOtp": emailOtp?.toJson(),
       "phoneOtp": phoneOtp?.toJson(),
       "createdAt": createdAt,

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lino_parents/src/Controller/all_controllers.dart';
 import 'package:lino_parents/src/Model/repository.dart';
+import 'package:lino_parents/src/View/dashboard/chat_screen_dates.dart';
+import 'package:lino_parents/src/View/dashboard/detailed_chat_screen.dart';
 import 'package:lino_parents/src/View/onBoarding/login_screen.dart';
 import 'package:lino_parents/src/View/dashboard/setting_screen.dart';
 import 'package:lino_parents/src/View/onBoarding/splash.dart';
@@ -29,6 +31,7 @@ class MyApp extends StatelessWidget {
         '/': (context) => const Splash(),
         '/login': (context) => LoginScreen(),
         '/setting': (context) => SettingScreen(),
+        '/chatDates': (context) => ChatScreenDates()
       },
     );
   }

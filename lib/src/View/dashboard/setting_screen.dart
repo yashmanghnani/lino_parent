@@ -30,12 +30,13 @@ class _SettingScreenState extends StateX<SettingScreen> {
   void initState() {
     super.initState();
     _con = AllController();
-    hourController = TextEditingController(text: "01");
-    minuteController = TextEditingController(text: "00");
+    hourController = TextEditingController();
+    minuteController = TextEditingController();
     hourFocusNode = FocusNode();
     minuteFocusNode = FocusNode();
-    learnLock = false;
-    playLock = false;
+    loadTimeDuration();
+    learnLock = localDb.value.playLock!;
+    playLock = localDb.value.learnLock!;
     getData();
   }
 
@@ -119,6 +120,19 @@ class _SettingScreenState extends StateX<SettingScreen> {
     minuteController.clear();
   }
 
+  Future<void> loadTimeDuration() async {
+    final minutes = await _con.getTimeDurationContro();
+    if (minutes != null) {
+      setState(() {
+        final hour = minutes ~/ 60;
+        final minute = minutes % 60;
+
+        hourController.text = hour.toString().padLeft(2, '0');
+        minuteController.text = minute.toString().padLeft(2, '0');
+      });
+    }
+  }
+
   @override
   void dispose() {
     hourController.dispose();
@@ -156,6 +170,19 @@ class _SettingScreenState extends StateX<SettingScreen> {
           ),
           automaticallyImplyLeading: false,
           backgroundColor: Colors.white,
+          actions: [
+            IconButton(
+              icon: Icon(
+                Icons.chat,
+                size: size.width * .09,
+                color: Color(0xff7C3AED),
+              ),
+              onPressed: () {
+                Navigator.pushNamed(context, '/chatDates');
+              },
+            ),
+            SizedBox(width: size.width * 0.04),
+          ],
         ),
         backgroundColor: Colors.white,
         body: Stack(children: [_gradientSection(size), _contentSection(size)]),
@@ -210,7 +237,13 @@ class _SettingScreenState extends StateX<SettingScreen> {
           title: "Lock Learn Section",
           subtitle: "Enable/Disable learn section",
           value: learnLock,
-          onTap: () => setState(() => learnLock = !learnLock),
+          onTap: () {
+            setState(() => learnLock = !learnLock);
+            socket.emit("learn-lock", {
+              "userId": localDb.value.uid!,
+              "status": learnLock,
+            });
+          },
         ),
         SizedBox(height: size.height * 0.035),
 
@@ -219,7 +252,13 @@ class _SettingScreenState extends StateX<SettingScreen> {
           title: "Lock Play Section",
           subtitle: "Enable/Disable play section",
           value: playLock,
-          onTap: () => setState(() => playLock = !playLock),
+          onTap: () {
+            setState(() => playLock = !playLock);
+            socket.emit("play-lock", {
+              "userId": localDb.value.uid,
+              "status": playLock,
+            });
+          },
         ),
         SizedBox(height: size.height * 0.035),
 
