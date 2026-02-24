@@ -1,5 +1,3 @@
-import 'dart:ffi';
-
 class LoginResponse {
   bool? success;
   String? msg;

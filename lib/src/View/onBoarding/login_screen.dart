@@ -4,6 +4,7 @@ import 'package:lino_parents/src/Model/Request/login_req.dart';
 import 'package:lino_parents/src/Model/Response/login_res.dart';
 import 'package:lino_parents/src/View/widgets/app_snackbar.dart';
 import 'package:lino_parents/src/View/widgets/app_submit_button.dart';
+import 'package:lino_parents/src/View/widgets/gradient_section.dart';
 import 'package:state_extended/state_extended.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -27,8 +28,6 @@ class _LoginScreenState extends StateX<LoginScreen> {
     _con = AllController();
     _mobileController = TextEditingController();
     _passwordController = TextEditingController();
-    // _mobileController.text = "7906870310";
-    // _passwordController.text = "Yash@1234";
     _mobileFocus = FocusNode();
     _passwordFocus = FocusNode();
   }
@@ -135,26 +134,9 @@ class _LoginScreenState extends StateX<LoginScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Stack(children: [_gradientSection(size), _formSection(size)]),
-    );
-  }
-
-  Widget _gradientSection(Size size) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        Container(
-          width: double.infinity,
-          height: size.height * .25,
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xffFFFFFF), Color(0xffAF52DE)],
-            ),
-          ),
-        ),
-      ],
+      body: Stack(
+        children: [const GradientBottomSection(), _formSection(size)],
+      ),
     );
   }
 

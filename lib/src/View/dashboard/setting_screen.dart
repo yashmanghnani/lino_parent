@@ -4,6 +4,7 @@ import 'package:lino_parents/src/Controller/all_controllers.dart';
 import 'package:lino_parents/src/Model/repository.dart';
 import 'package:lino_parents/src/View/widgets/app_snackbar.dart';
 import 'package:lino_parents/src/View/widgets/app_submit_button.dart';
+import 'package:lino_parents/src/View/widgets/gradient_section.dart';
 import 'package:socket_io_client/socket_io_client.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:geolocator/geolocator.dart';
@@ -74,13 +75,11 @@ class _SettingScreenState extends StateX<SettingScreen> {
     bool serviceEnabled;
     LocationPermission permission;
 
-    // 1. Location service on hai ya nahi
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       throw Exception('Location services are disabled.');
     }
 
-    // 2. Permission check
     permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
@@ -93,9 +92,12 @@ class _SettingScreenState extends StateX<SettingScreen> {
       throw Exception('Location permission permanently denied');
     }
 
-    // 3. Get position
+    const LocationSettings locationSettings = LocationSettings(
+      accuracy: LocationAccuracy.high,
+    );
+
     return await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.high,
+      locationSettings: locationSettings,
     );
   }
 
@@ -150,7 +152,7 @@ class _SettingScreenState extends StateX<SettingScreen> {
     final Size size = MediaQuery.sizeOf(context);
     return PopScope(
       canPop: false,
-      onPopInvoked: (didPop) {
+      onPopInvokedWithResult: (didPop, result) {
         if (!didPop) {
           socket.disconnect();
           socket.clearListeners();
@@ -185,27 +187,8 @@ class _SettingScreenState extends StateX<SettingScreen> {
           ],
         ),
         backgroundColor: Colors.white,
-        body: Stack(children: [_gradientSection(size), _contentSection(size)]),
+        body: Stack(children: [const GradientBottomSection(), _contentSection(size)]),
       ),
-    );
-  }
-
-  Widget _gradientSection(Size size) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        Container(
-          width: double.infinity,
-          height: size.height * .25,
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xffFFFFFF), Color(0xffAF52DE)],
-            ),
-          ),
-        ),
-      ],
     );
   }
 

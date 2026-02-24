@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:lino_parents/src/Controller/all_controllers.dart';
 import 'package:lino_parents/src/Model/Response/chat_hostory_res.dart';
 import 'package:lino_parents/src/View/dashboard/detailed_chat_screen.dart';
+import 'package:lino_parents/src/View/widgets/gradient_section.dart';
+import 'package:shimmer/shimmer.dart';
 
 class ChatScreenDates extends StatefulWidget {
   const ChatScreenDates({super.key});
@@ -49,24 +51,7 @@ class _ChatScreenDatesState extends State<ChatScreenDates> {
         elevation: 0,
       ),
       body: Stack(
-        children: [_gradientSection(size), _chatHistorySection(size)],
-      ),
-    );
-  }
-
-  Widget _gradientSection(Size size) {
-    return Align(
-      alignment: Alignment.bottomCenter,
-      child: Container(
-        width: double.infinity,
-        height: size.height * .4,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xffFFFFFF), Color(0xffE0B0FF)],
-          ),
-        ),
+        children: [const GradientBottomSection(), _chatHistorySection(size)],
       ),
     );
   }
@@ -74,7 +59,7 @@ class _ChatScreenDatesState extends State<ChatScreenDates> {
   Widget _chatHistorySection(Size size) {
     return Column(
       children: [
-        const SizedBox(height: 10),
+        const SizedBox(height: 15),
         // Weekly Overview Card
         Container(
           margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -109,18 +94,22 @@ class _ChatScreenDatesState extends State<ChatScreenDates> {
             ],
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 45),
         Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            itemCount: groupedData.length,
-            itemBuilder: (context, index) {
-              final item = groupedData[index];
-              final formattedDate =
-                  "${item.id?.day}-${item.id?.month}-${item.id?.year}";
-              return _buildHistoryCard(formattedDate, item.sessions);
-            },
-          ),
+          child: isLoading
+              ? _buildShimmerLoading()
+              : groupedData.isEmpty
+              ? const Center(child: Text("No history found"))
+              : ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  itemCount: groupedData.length,
+                  itemBuilder: (context, index) {
+                    final item = groupedData[index];
+                    final formattedDate =
+                        "${item.id?.day}-${item.id?.month}-${item.id?.year}";
+                    return _buildHistoryCard(formattedDate, item.sessions);
+                  },
+                ),
         ),
       ],
     );
@@ -190,6 +179,60 @@ class _ChatScreenDatesState extends State<ChatScreenDates> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildShimmerLoading() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        itemCount: 7, // Kitne placeholders dikhane hain
+        itemBuilder: (context, index) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12.0),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 50.0,
+                  height: 60.0,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                const Padding(padding: EdgeInsets.symmetric(horizontal: 8.0)),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        height: 12.0,
+                        color: Colors.white,
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 4.0),
+                      ),
+                      Container(
+                        width: double.infinity,
+                        height: 12.0,
+                        color: Colors.white,
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 4.0),
+                      ),
+                      Container(width: 40.0, height: 12.0, color: Colors.white),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 }
